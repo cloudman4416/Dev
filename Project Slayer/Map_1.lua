@@ -321,7 +321,7 @@ local rarities = {
     "Supreme",
     "Polar",
     "Devourer",
-    "Limited"
+    "Limited";
 }
 
 Tabs["Auto Farm"]:AddToggle("tAutoChest", {
