@@ -37,6 +37,7 @@ function tpto(p1)
         client.Character.HumanoidRootPart.CFrame = p1
     end)
 end
+
 local counter = 0
 local time = tick()
 
