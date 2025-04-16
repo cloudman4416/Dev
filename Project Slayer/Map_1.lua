@@ -316,6 +316,7 @@ Tabs["Auto Farm"]:AddToggle("tAutoBlock", {
     end
 })
 
+
 local rarities = {
     "Mythic",
     "Supreme",
