@@ -370,10 +370,16 @@ Tabs["Buffs"]:AddToggle("tInfBreath", {
     end
 })
 
-
-Window:SelectTab(1)
-
 SaveManager:SetLibrary(Library)
 SaveManager:SetFolder("CloudHub/babouche")
 SaveManager:BuildConfigSection(Tabs["Settings"])
+Tabs["Settings"]:AddToggle("tAutoExec", {
+    Title = "Auto Execute Script On Rejoin";
+    Default = true;
+    Callback = function(Value)
+        getgenv().AutoExecCloudy = Value
+    end
+})
 SaveManager:LoadAutoloadConfig()
+
+Window:SelectTab(1)

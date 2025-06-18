@@ -1,7 +1,9 @@
+--Universal Loader
 repeat task.wait() until game:IsLoaded()
 local client = game.Players.LocalPlayer
 local VirtualUser = game:GetService("VirtualUser")
 local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
 
 client.Idled:Connect(function()
     VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
@@ -9,13 +11,8 @@ client.Idled:Connect(function()
     VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
 end)
 
-local GuiService = game:GetService("GuiService")
-GuiService.ErrorMessageChanged:Connect(function()
-	TeleportService:Teleport(5956785391, client)
-end)
-
-;
 pcall(function()
+	makefolder("CloudHub")
 	local potKey = "CloudHub/key"
 	local continu = true
 	local KeyGuardLibrary = loadstring(game:HttpGet("https://cdn.keyguardian.org/library/v1.0.0.lua"))()
@@ -35,7 +32,7 @@ pcall(function()
 		end
 	end
 
-	local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+	local Fluent = loadstring(game:HttpGetAsync("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 	local key = ""
 
 	local Window = Fluent:CreateWindow({
@@ -89,12 +86,31 @@ pcall(function()
 	Window:SelectTab(1)
 	while continu do task.wait() end
 end)
-local baseUrl = "https://raw.githubusercontent.com/cloudman4416/scripts/refs/heads/main/"
 
-local succ, err = pcall(function()
-    loadstring(game:HttpGet(baseUrl..game.PlaceId))()
-end)
+local baseUrl = `https://raw.githubusercontent.com/cloudman4416/scripts/refs/heads/main/{game.GameId}/loader.lua`
+local base64url = `https://api.github.com/repos/cloudman4416/scripts/contents/{game.GameId}/loader.lua?ref=main`
 
-if not succ then
-    print(err)
+if base64 and base64.decode then
+    local response = game:HttpGet(base64url)
+    local data = HttpService:JSONDecode(response)
+
+    local base64decoded = base64.decode(data.content:gsub("\n", ""))
+    loadstring(base64decoded)()
+else
+	local succ, err = pcall(function()
+		loadstring(game:HttpGet(baseurl))()
+	end)
+	
+	if not succ then
+		print(err)
+	end
+end
+
+if queue_on_teleport and not getgenv().CloudHub then
+    getgenv().CloudHub = true
+    client.OnTeleport:Once(function(State)
+		if getgenv().AutoExecCloudy then
+        	queue_on_teleport(`loadstring(game:HttpGet("https://raw.githubusercontent.com/cloudman4416/scripts/main/Loader.lua"))()`)
+		end
+    end)
 end

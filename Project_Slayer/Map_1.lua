@@ -1,3 +1,4 @@
+--Map 1 Priv
 repeat task.wait() until game:IsLoaded()
 local Library = loadstring(game:HttpGetAsync("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
@@ -24,7 +25,7 @@ local distance = 15
 local places = require(game:GetService("ReplicatedStorage").Modules.Global.Map_Locaations)
 local bosses = {}
 for i, v in workspace.Mobs.Bosses:GetDescendants() do
-    if v:IsA("Configuration") and v:FindFirstChild("Npc_Configuration")then
+    if v:IsA("Configuration") and v:FindFirstChild("Npc_Configuration") then
         local info = require(v.Npc_Configuration)
         bosses[info["Name"]] = info["Npc_Spawning"]["Spawn_Locations"][1]
     end
@@ -59,13 +60,13 @@ function tpto(p1)
         client.Character.HumanoidRootPart.CFrame = p1
     end)
 end
-local counter = 0
-local time = tick()
---[[local function smartTp(dest:Vector3)
+
+local function smartTp(dest:CFrame)
+    dest = dest.Position
     local closest = nil
     local shortest = (client.Character.HumanoidRootPart.Position - dest).Magnitude
     for loc, coord in places do
-        if game:GetService("ReplicatedStorage").Player_Data.N1NJAx974.MapUi.UnlockedLocations:FindFirstChild(loc) and game:GetService("Players").LocalPlayer.PlayerGui.Map_Ui.Holder.Locations:FindFirstChild(loc) then
+        if playerData.MapUi.UnlockedLocations:FindFirstChild(loc) and game:GetService("Players").LocalPlayer.PlayerGui.Map_Ui.Holder.Locations:FindFirstChild(loc) then
             local dist = (coord-dest).Magnitude
             if dist < shortest then
                 closest = loc
@@ -80,10 +81,9 @@ local time = tick()
             [3] = closest
         }
         game:GetService("ReplicatedStorage"):WaitForChild("teleport_player_to_location_for_map_tang"):InvokeServer(unpack(args))
-        counter+=1
-        print(counter)
     end
-end]]
+    tweento(CFrame.new(dest)).Completed:Wait()
+end
 
 local function findBoss(name, hrp)
     for i, v in pairs(workspace.Mobs:GetDescendants()) do
@@ -202,6 +202,7 @@ local Tabs = {
     ["Auto Farm"] = Window:AddTab({Title = "Auto Farm", Icon = ""});
     ["Kill Auras"] = Window:AddTab({Title = "Kill Auras", Icon = ""});
     ["Misc"] = Window:AddTab({Title = "Misc", Icon = ""});
+    ["Quests"] = Window:AddTab({Title = "Quests", Icon = ""});
     ["Buffs"] = Window:AddTab({Title = "Buffs", Icon = ""});
     ["Webhook Settings"] = Window:AddTab({Title = "Webhook settings", Icon = ""});
     ["Settings"] = Window:AddTab({Title = "Settings", Icon = "settings"});
@@ -391,19 +392,13 @@ Tabs["Kill Auras"]:AddToggle("tArrowKA", {
     Default = false,
     Callback = function(Value)
         if Value then
-            task.spawn(function()
-                while options.tArrowKA.Value do
-                    local args = {
-                        [1] = "skil_ting_asd",
-                        [2] = client,
-                        [3] = "arrow_knock_back",
-                        [4] = 5
-                    }
-
-                    Handle_Initiate_S_:InvokeServer(unpack(args))
-                    task.wait(6)
-                end
-            end)
+            if options["tBringMob"].Value then
+                Library:Notify({
+                    Title = "Attention",
+                    Content = "You'r succeptible to get kicked if you use two different KA",
+                    Duration = 5
+                })
+            end
             task.spawn(function()
                 while options.tArrowKA.Value do 
                     local target = findMob(true)
@@ -425,6 +420,54 @@ Tabs["Kill Auras"]:AddToggle("tArrowKA", {
         end
     end
 })
+
+Tabs["Kill Auras"]:AddToggle("tBringMob", {
+    Title = 'Arrow Bring Mob',
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            if options["tArrowKA"].Value then
+                Library:Notify({
+                    Title = "Attention",
+                    Content = "You'r succeptible to get kicked if you use two different KA",
+                    Duration = 5
+                })
+            end
+            task.spawn(function()
+                while options.tBringMob.Value do 
+                    local target = findMob(true)
+                    if target then
+                        local args = {
+                            [1] = "piercing_arrow_damage",
+                            [2] = client,
+                            [3] = target:GetModelCFrame()
+                        }
+                        Handle_Initiate_S:FireServer(unpack(args))
+                        task.wait(0.2)
+                    else
+                        task.wait()
+                    end
+                end
+            end)
+        end
+    end
+})
+
+task.spawn(function()
+    while true do
+        if options.tBringMob.Value or options.tArrowKA.Value then
+            local args = {
+                [1] = "skil_ting_asd",
+                [2] = client,
+                [3] = "arrow_knock_back",
+                [4] = 5
+            }
+            Handle_Initiate_S_:InvokeServer(unpack(args))
+            task.wait(6)
+        end
+        task.wait()
+    end
+end)
 
 --[[
 
@@ -601,6 +644,181 @@ Tabs["Misc"]:AddButton({
     end
 })
 
+-- QUESTS
+
+Tabs["Quests"]:AddSection("All These Functions Will Use A Smart Tp That Use Your Unlocked Map Location")
+
+Tabs["Quests"]:AddToggle("tAutoRice", {
+    Title = "Auto Rice";
+    Default = false;
+    Callback = function(Value)
+        task.spawn(function()
+            if Value then
+                local _conn = RunService.Stepped:Connect(noclip)
+                local antifall = Instance.new("BodyVelocity")
+                antifall.Velocity = Vector3.new(0, 0, 0)
+                antifall.Parent = client.Character.HumanoidRootPart
+                while options["tAutoRice"].Value do
+                    smartTp(workspace.Sarah:GetModelCFrame())
+                    task.wait(0.2)
+                    local args = {
+                        [1] = "AddQuest",
+                        [2] = `Players.{client.Name}.PlayerGui.Npc_Dialogue.LocalScript.Functions`,
+                        [3] = os.clock(),
+                        [4] = playerData:WaitForChild("Quest"),
+                        [5] = {
+                            ["Current"] = "Help Sarah pick rice"
+                        }
+                    }
+                    Handle_Initiate_S:FireServer(unpack(args))
+                    task.wait(0.2)
+
+                    while playerData.Quest.Current.Value == "Help Sarah pick rice" and options["tAutoRice"].Value do
+                        local rice = workspace.StarterVillage_RiceStrings:FindFirstChild("RiceString")
+                        if rice then
+                            tweento(rice.CFrame).Completed:Wait()
+                            task.wait(0.2)
+                            local args = {
+                                [1] = "givericequestthing",
+                                [2] = `Players.{client.Name}.PlayerGui.localscript_cache.Prompts_Handler`,
+                                [3] = client,
+                                [4] = rice,
+                                [5] = os.clock()
+                            }
+                            
+                            Handle_Initiate_S:FireServer(unpack(args))
+                        end
+                        task.wait(0.2)
+                    end
+                end
+                _conn:Disconnect()
+                antifall:Destroy()
+            end
+        end)
+    end
+})
+
+Tabs["Quests"]:AddToggle("tAutoWagon", {
+    Title = "Auto Transport Wagon";
+    Default = false;
+    Callback = function(Value)
+        if Value then
+            task.spawn(function()
+                local _conn = RunService.Stepped:Connect(noclip)
+                local antifall = Instance.new("BodyVelocity")
+                antifall.Velocity = Vector3.new(0, 0, 0)
+                antifall.Parent = client.Character.HumanoidRootPart
+                while options["tAutoWagon"].Value do
+                    smartTp(workspace["Grandpa Wagwon"]:GetModelCFrame())
+                    task.wait(0.2)
+                    local args = {
+                        [1] = "AddQuest",
+                        [2] = `Players.{client.Name}.PlayerGui.Npc_Dialogue.LocalScript.Functions`,
+                        [3] = os.clock(),
+                        [4] = playerData:WaitForChild("Quest"),
+                        [5] = {
+                            ["Current"] = "Deliver grandpa Wagwon's wagon",
+                        }
+                    }
+                    Handle_Initiate_S:FireServer(unpack(args))
+                    task.wait(0.2)
+                    while playerData.Quest.Current.Value == "Deliver grandpa Wagwon's wagon" and workspace.Debree:FindFirstChild("wagonasd") do
+                        smartTp(CFrame.new(454.2309875488281, 275.26300048828125, -2670.489013671875))
+                    end
+                end
+                _conn:Disconnect()
+                antifall:Destroy()
+            end)
+        end
+    end
+})
+
+Tabs["Quests"]:AddButton({
+    Title = "Train Target";
+    Callback = function()
+        client:RequestStreamAroundAsync(Vector3.new(2857, 315, -4064))
+        workspace.Target_Training.Chair:WaitForChild("Detect_Part").Initiated:FireServer()
+        task.wait(1)
+        local args = {
+            [1] = "Quest_add",
+            [2] = `Players.{client.Name}.PlayerGui.ExcessGuis.chairui.Holder.LocalScript`,
+            [3] = os.clock(),
+            [4] = {},
+            [5] = client,
+            [6] = "donetargettraining"
+        }
+        
+        Handle_Initiate_S_:InvokeServer(unpack(args))
+        Handle_Initiate_S:FireServer("remove_item", client.PlayerGui.ExcessGuis:WaitForChild("chairui", 1))
+    end;
+})
+
+Tabs["Quests"]:AddButton({
+    Title = "Train Meditation";
+    Callback = function()
+        client:RequestStreamAroundAsync(Vector3.new(2786, 314, -3856))
+        workspace.Map.Chunk23:WaitForChild("Meditate_Mat").Initiated:FireServer()
+        task.wait(1)
+        local args = {
+            [1] = "Quest_add",
+            [2] = `Players.{client.Name}.PlayerGui.ExcessGuis.Meditate_gui.Holder.LocalScript`,
+            [3] = os.clock(),
+            [4] = {},
+            [5] = client,
+            [6] = "donedoingmeditation"
+        }
+        
+        Handle_Initiate_S_:InvokeServer(unpack(args))
+        Handle_Initiate_S:FireServer("remove_item", client.PlayerGui.ExcessGuis:WaitForChild("Meditate_gui", 1))
+    end;
+})
+
+Tabs["Quests"]:AddButton({
+    Title = "Train Pushups";
+    Callback = function()
+        client:RequestStreamAroundAsync(Vector3.new(2786, 314, -3856))
+        workspace.Map.Chunk23:WaitForChild("Push_Ups_Mat").Initiated:FireServer()
+        task.wait(1)
+        local args = {
+            [1] = "Quest_add",
+            [2] = `Players.{client.Name}.PlayerGui.ExcessGuis.Push_Up_Gui.Holder.push_up_mat_local_script`,
+            [3] = os.clock(),
+            [4] = {},
+            [5] = client,
+            [6] = "donepushuptraining"
+        }
+        
+        Handle_Initiate_S_:InvokeServer(unpack(args))
+        Handle_Initiate_S:FireServer("remove_item", client.PlayerGui.ExcessGuis:WaitForChild("Push_Up_Gui", 1))
+    end;
+})
+
+Tabs["Quests"]:AddButton({
+    Title = "Train Lighting Dodge";
+    Callback = function()
+        local _conn = RunService.Stepped:Connect(noclip)
+        local antifall = Instance.new("BodyVelocity")
+        antifall.Velocity = Vector3.new(0, 0, 0)
+        antifall.Parent = client.Character.HumanoidRootPart
+        tweento(CFrame.new(-992, 469, -2309)).Completed:Wait()
+        client.PlayerGui.ExcessGuis:WaitForChild("thnder_gui")
+        task.wait(1)
+        local args = {
+            [1] = "Quest_add",
+            [2] = `Players.{client.Name}.PlayerGui.ExcessGuis.thnder_gui.Holder.LocalScript`,
+            [3] = os.clock(),
+            [4] = {},
+            [5] = client,
+            [6] = "donelightningdodge"
+        }
+        
+        Handle_Initiate_S_:InvokeServer(unpack(args))
+        Handle_Initiate_S:FireServer("remove_item", client.PlayerGui.ExcessGuis:WaitForChild("thnder_gui", 1))
+        _conn:Disconnect()
+        antifall:Destroy()
+    end;
+})
+
 -- BUFFS
 
 local skillMod = require(game:GetService("ReplicatedStorage").Modules.Server.Skills_Modules_Handler).Skills
@@ -647,6 +865,15 @@ Tabs["Buffs"]:AddToggle("tGodMode", {
     Default = false,
     Callback = function(Value)
         if Value then
+            if options["tArrowKA"].Value or options["tBringMob"].Value then
+                Library:Notify({
+                    Title = "Attention",
+                    Content = "Can't toggle godmode and arrow ka at the same time",
+                    Duration = 2
+                })
+                options["tGodMode"]:SetValue(false)
+                return
+            end
             task.spawn(function()
                 distance = 6
                 while options["tGodMode"].Value do
@@ -732,15 +959,17 @@ Tabs["Webhook Settings"]:AddToggle("tWebHook", {
 })
 
 SaveManager:SetLibrary(Library)
+makefolder(`CloudHub/{game.PlaceId}`)
+makefolder(`CloudHub/{game.PlaceId}/{client.UserId}`)
 SaveManager:SetFolder(`CloudHub/{game.PlaceId}/{client.UserId}`)
 SaveManager:BuildConfigSection(Tabs["Settings"])
+Tabs["Settings"]:AddToggle("tAutoExec", {
+    Title = "Auto Execute Script On Rejoin";
+    Default = true;
+    Callback = function(Value)
+        getgenv().AutoExecCloudy = Value
+    end
+})
 SaveManager:LoadAutoloadConfig()
 
 Window:SelectTab(1)
-
-if queue_on_teleport and not getgenv().CloudHub then
-    getgenv().CloudHub = true
-    client.OnTeleport:Once(function(State)
-        queue_on_teleport(`loadstring(game:HttpGet("https://raw.githubusercontent.com/cloudman4416/scripts/main/Loader"))()`)
-    end)
-end
